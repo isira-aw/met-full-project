@@ -68,6 +68,7 @@ apiClient.interceptors.request.use(
  * Response Interceptor:
  * - Handles automatic token refresh on 401 errors
  * - Retries failed requests after token refresh
+ * - Preserves error response data for proper error handling
  */
 apiClient.interceptors.response.use(
   (response) => {
@@ -77,11 +78,20 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
+    // Log errors in development for debugging
+    if (import.meta.env.DEV && error.response) {
+      console.group(`🔴 API Error: ${error.response.status} ${originalRequest.method?.toUpperCase()} ${originalRequest.url}`);
+      console.log('Status:', error.response.status);
+      console.log('Data:', error.response.data);
+      console.log('Headers:', error.response.headers);
+      console.groupEnd();
+    }
+
     // Check if error is 401 and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       // Prevent refresh endpoint from triggering infinite loop
       if (originalRequest.url?.includes('/auth/refresh')) {
-        console.error('Refresh token failed, redirecting to login...');
+        console.error('❌ Refresh token failed or expired, redirecting to login...');
         localStorage.removeItem('accessToken');
         localStorage.removeItem('userData');
         window.location.href = '/login';
@@ -135,13 +145,18 @@ apiClient.interceptors.response.use(
           processQueue();
           isRefreshing = false;
 
+          if (import.meta.env.DEV) {
+            console.log('✅ Token refreshed successfully');
+          }
+
           // Retry the original request
           return apiClient(originalRequest);
         } else {
-          throw new Error('Token refresh failed');
+          throw new Error('Token refresh failed: Invalid response');
         }
       } catch (refreshError) {
         // Refresh failed, clear auth data and redirect to login
+        console.error('❌ Token refresh failed:', refreshError);
         processQueue(refreshError as Error);
         isRefreshing = false;
 
@@ -157,7 +172,8 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // For other errors, reject as is
+    // For all other errors, preserve the error response and reject
+    // This ensures components can access error.response.data.message
     return Promise.reject(error);
   }
 );

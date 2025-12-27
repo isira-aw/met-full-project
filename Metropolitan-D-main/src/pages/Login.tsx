@@ -4,6 +4,7 @@ import { Eye, EyeOff, AlertCircle, X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { apiService } from "../services/api";
 import { LoadingSpinner } from "../components/UI/LoadingSpinner";
+import { extractErrorMessage, logError } from "../utils/errorHandler";
 
 export const Login: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -68,26 +69,18 @@ export const Login: React.FC = () => {
           response.message || "Invalid email or password. Please try again."
         );
       }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      console.error("Login error:", error);
+    } catch (error: unknown) {
+      // Extract error message using centralized error handler
+      const errorInfo = extractErrorMessage(
+        error,
+        "Login failed. Please check your credentials and try again."
+      );
 
-      // Handle different types of errors
-      if (error.name === "TypeError" && error.message.includes("fetch")) {
-        setError(
-          "Unable to connect to server. Please check your internet connection and try again."
-        );
-      } else if (error.response?.status === 401) {
-        setError("Invalid email or password. Please check your credentials.");
-      } else if (error.response?.status === 429) {
-        setError(
-          "Too many login attempts. Please wait a moment and try again."
-        );
-      } else if (error.response?.status >= 500) {
-        setError("Server error. Please try again later.");
-      } else {
-        setError("An unexpected error occurred. Please try again.");
-      }
+      // Log error details in development
+      logError(errorInfo, 'Login');
+
+      // Display the extracted error message to the user
+      setError(errorInfo.message);
     } finally {
       setLoading(false);
     }
