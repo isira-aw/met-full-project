@@ -10,7 +10,7 @@ import {
   EmployeeResponse,
   CreateJobCardRequest,
 } from "../types/api";
-import { LoadingSpinner } from "../components/UI/LoadingSpinner";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
 import { JobCardsDisplay } from "../components/JobCards/JobCardsDisplay";
 import { JobCardsFilters } from "../components/JobCards/JobCardsFilters";
 

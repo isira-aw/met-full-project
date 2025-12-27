@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Search, Edit, Trash2, Phone, Plus, Eye, EyeOff } from "lucide-react";
 import { apiService } from "../services/api";
 import { EmployeeResponse, UpdateEmployeeRequest } from "../types/api";
-import { LoadingSpinner } from "../components/UI/LoadingSpinner";
-import { Modal } from "../components/UI/Modal";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
+import Modal from "../components/ui/Modal";
 
 export const Employees: React.FC = () => {
   const [employees, setEmployees] = useState<EmployeeResponse[]>([]);

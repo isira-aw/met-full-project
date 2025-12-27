@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {  useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { apiService } from '../services/api';
-import { LoadingSpinner } from '../components/UI/LoadingSpinner';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 export const Register: React.FC = () => {
   const [formData, setFormData] = useState({

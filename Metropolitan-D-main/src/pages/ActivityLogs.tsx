@@ -10,7 +10,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { apiService } from "../services/api";
 import { LogResponse, EmployeeResponse } from "../types/api";
-import { LoadingSpinner } from "../components/UI/LoadingSpinner";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
 
 // Simple Map Component for location display
 const SimpleMap: React.FC<{

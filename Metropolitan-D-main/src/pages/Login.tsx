@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, AlertCircle, X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { apiService } from "../services/api";
-import { LoadingSpinner } from "../components/UI/LoadingSpinner";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
 import { extractErrorMessage, logError } from "../utils/errorHandler";
 
 export const Login: React.FC = () => {

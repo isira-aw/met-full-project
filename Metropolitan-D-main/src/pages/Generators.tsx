@@ -22,8 +22,8 @@ import {
   CreateGeneratorRequest,
   JobCardResponse,
 } from "../types/api";
-import { LoadingSpinner } from "../components/UI/LoadingSpinner";
-import { Modal } from "../components/UI/Modal";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
+import Modal from "../components/ui/Modal";
 
 export const Generators: React.FC = () => {
   const [generators, setGenerators] = useState<GeneratorResponse[]>([]);

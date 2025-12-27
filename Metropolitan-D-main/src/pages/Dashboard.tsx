@@ -14,8 +14,8 @@ import {
   MiniJobCardResponse,
   LogResponse,
 } from "../types/api";
-import { LoadingSpinner } from "../components/UI/LoadingSpinner";
-import { StatusBadge } from "../components/UI/StatusBadge";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
+import StatusBadge from "../components/ui/StatusBadge";
 import { format } from "date-fns-tz";
 
 interface DashboardStats {
