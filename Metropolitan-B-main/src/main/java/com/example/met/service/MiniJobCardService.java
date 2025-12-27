@@ -11,10 +11,12 @@ import com.example.met.repository.LogRepository;
 import com.example.met.repository.MiniJobCardRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.DateTimeException;
 import java.time.LocalDate;
@@ -36,6 +38,7 @@ public class MiniJobCardService {
     private final EmployeeService employeeService;
     private final LogRepository logRepository;
     private final OTTimeCalculatorService otTimeCalculatorService;
+    private final FileStorageService fileStorageService;
     // Sri Lanka timezone constant
     private static final ZoneId SRI_LANKA_ZONE = ZoneId.of("Asia/Colombo");
 
@@ -600,6 +603,11 @@ public class MiniJobCardService {
             response.setGeneratorEmail(generator.getEmail());
             response.setGeneratorDescription(generator.getDescription());
 
+            // Weight and attachment fields
+            response.setWeightLimit(miniJobCard.getWeightLimit() != null ? miniJobCard.getWeightLimit() : 5);
+            response.setHasAttachment(miniJobCard.getAttachmentPath() != null);
+            response.setAttachmentOriginalName(miniJobCard.getAttachmentOriginalName());
+
             return response;
         } catch (Exception e) {
             log.error("Error converting mini job card to response", e);
@@ -695,5 +703,117 @@ public class MiniJobCardService {
             log.error("Error checking edit eligibility for employee: {}", employeeEmail, e);
             return false;
         }
+    }
+
+    /**
+     * Update weight limit for a mini job card (ADMIN only)
+     */
+    @Transactional
+    public MiniJobCardResponse updateWeight(UUID miniJobCardId, Integer weightLimit) {
+        log.info("Updating weight for mini job card: {} to {}", miniJobCardId, weightLimit);
+
+        // Validate weight limit
+        if (weightLimit < 1 || weightLimit > 10) {
+            throw new IllegalArgumentException("Weight limit must be between 1 and 10");
+        }
+
+        // Find mini job card
+        MiniJobCard miniJobCard = miniJobCardRepository.findById(miniJobCardId)
+                .orElseThrow(() -> new ResourceNotFoundException("Mini job card not found with ID: " + miniJobCardId));
+
+        // Update weight
+        miniJobCard.setWeightLimit(weightLimit);
+        MiniJobCard updated = miniJobCardRepository.save(miniJobCard);
+
+        log.info("Weight updated successfully for mini job card: {}", miniJobCardId);
+        return convertToResponse(updated);
+    }
+
+    /**
+     * Add attachment to a mini job card
+     */
+    @Transactional
+    public MiniJobCardResponse addAttachment(UUID miniJobCardId, MultipartFile file, String userEmail) {
+        log.info("Adding attachment to mini job card: {} by user: {}", miniJobCardId, userEmail);
+
+        // Find mini job card
+        MiniJobCard miniJobCard = miniJobCardRepository.findById(miniJobCardId)
+                .orElseThrow(() -> new ResourceNotFoundException("Mini job card not found with ID: " + miniJobCardId));
+
+        // Check permissions (employees can only upload to their own tickets)
+        if (!userEmail.contains("@") || !userEmail.contains(".")) {
+            // User is not admin, check if they own this ticket
+            if (!miniJobCard.getEmployee().getEmail().equals(userEmail)) {
+                throw new IllegalArgumentException("Employees can only upload attachments to their own tickets");
+            }
+        }
+
+        // Delete old attachment if exists
+        if (miniJobCard.getAttachmentPath() != null) {
+            try {
+                fileStorageService.deleteFile(miniJobCard.getAttachmentPath());
+                log.info("Deleted old attachment: {}", miniJobCard.getAttachmentPath());
+            } catch (Exception e) {
+                log.warn("Failed to delete old attachment, continuing: {}", e.getMessage());
+            }
+        }
+
+        // Store new file
+        String filename = fileStorageService.storeFile(file);
+        miniJobCard.setAttachmentPath(filename);
+        miniJobCard.setAttachmentOriginalName(file.getOriginalFilename());
+
+        MiniJobCard updated = miniJobCardRepository.save(miniJobCard);
+        log.info("Attachment added successfully to mini job card: {}", miniJobCardId);
+
+        return convertToResponse(updated);
+    }
+
+    /**
+     * Get attachment resource for download
+     */
+    public Resource getAttachment(UUID miniJobCardId) {
+        log.info("Retrieving attachment for mini job card: {}", miniJobCardId);
+
+        MiniJobCard miniJobCard = miniJobCardRepository.findById(miniJobCardId)
+                .orElseThrow(() -> new ResourceNotFoundException("Mini job card not found with ID: " + miniJobCardId));
+
+        if (miniJobCard.getAttachmentPath() == null) {
+            throw new IllegalArgumentException("No attachment found for this mini job card");
+        }
+
+        return fileStorageService.loadFileAsResource(miniJobCard.getAttachmentPath());
+    }
+
+    /**
+     * Delete attachment from a mini job card (ADMIN only)
+     */
+    @Transactional
+    public MiniJobCardResponse deleteAttachment(UUID miniJobCardId) {
+        log.info("Deleting attachment from mini job card: {}", miniJobCardId);
+
+        MiniJobCard miniJobCard = miniJobCardRepository.findById(miniJobCardId)
+                .orElseThrow(() -> new ResourceNotFoundException("Mini job card not found with ID: " + miniJobCardId));
+
+        if (miniJobCard.getAttachmentPath() == null) {
+            throw new IllegalArgumentException("No attachment found for this mini job card");
+        }
+
+        // Delete file from storage
+        try {
+            fileStorageService.deleteFile(miniJobCard.getAttachmentPath());
+        } catch (Exception e) {
+            log.error("Failed to delete attachment file: {}", miniJobCard.getAttachmentPath(), e);
+            // Continue anyway to clear the database reference
+        }
+
+        // Clear attachment fields
+        miniJobCard.setAttachmentPath(null);
+        miniJobCard.setAttachmentOriginalName(null);
+
+        MiniJobCard updated = miniJobCardRepository.save(miniJobCard);
+        log.info("Attachment deleted successfully from mini job card: {}", miniJobCardId);
+
+        return convertToResponse(updated);
     }
 }

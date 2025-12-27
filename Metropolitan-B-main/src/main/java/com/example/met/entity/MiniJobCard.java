@@ -60,6 +60,18 @@ public class MiniJobCard {
     @Column(name ="lastTime_update_this-ticket")
     private LocalDateTime lastTimeUpdateThisTicket;
 
+    // Weight limit for the ticket (1-10, default 5)
+    @Column(name = "weight_limit")
+    private Integer weightLimit = 5;
+
+    // File attachment path (stored on server)
+    @Column(name = "attachment_path")
+    private String attachmentPath;
+
+    // Original filename of the attachment
+    @Column(name = "attachment_original_name")
+    private String attachmentOriginalName;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")

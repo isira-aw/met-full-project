@@ -2,18 +2,24 @@ package com.example.met.controller;
 
 import com.example.met.dto.request.MiniJobCardRequest;
 import com.example.met.dto.request.MiniJobCardUpdateRequest;
+import com.example.met.dto.request.UpdateWeightRequest;
 import com.example.met.dto.response.ApiResponse;
 import com.example.met.dto.response.MiniJobCardResponse;
 import com.example.met.enums.JobStatus;
+import com.example.met.service.FileStorageService;
 import com.example.met.service.MiniJobCardService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
@@ -27,6 +33,7 @@ import java.util.UUID;
 public class MiniJobCardController {
 
     private final MiniJobCardService miniJobCardService;
+    private final FileStorageService fileStorageService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
@@ -250,6 +257,129 @@ public class MiniJobCardController {
         } catch (Exception e) {
             log.error("Error checking edit eligibility for authenticated employee", e);
             ApiResponse<Boolean> response = ApiResponse.error("Failed to check edit eligibility", false);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    /**
+     * Update weight limit for a mini job card (ADMIN only)
+     */
+    @PatchMapping("/{id}/weight")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<MiniJobCardResponse>> updateWeight(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateWeightRequest request) {
+        try {
+            log.info("Admin request to update weight for mini job card: {} to {}", id, request.getWeightLimit());
+
+            MiniJobCardResponse updated = miniJobCardService.updateWeight(id, request.getWeightLimit());
+            ApiResponse<MiniJobCardResponse> response = ApiResponse.success(
+                    "Weight updated successfully", updated);
+
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid weight update request for mini job card: {}", id, e);
+            ApiResponse<MiniJobCardResponse> response = ApiResponse.error(e.getMessage(), null);
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            log.error("Error updating weight for mini job card: {}", id, e);
+            ApiResponse<MiniJobCardResponse> response = ApiResponse.error(
+                    "Failed to update weight", null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    /**
+     * Upload attachment to a mini job card
+     * Admin can upload to any ticket, Employee can upload when completing
+     */
+    @PostMapping("/{id}/attachment")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    public ResponseEntity<ApiResponse<MiniJobCardResponse>> uploadAttachment(
+            @PathVariable UUID id,
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication) {
+        try {
+            log.info("Request to upload attachment for mini job card: {} by user: {}",
+                    id, authentication.getName());
+
+            MiniJobCardResponse updated = miniJobCardService.addAttachment(id, file, authentication.getName());
+            ApiResponse<MiniJobCardResponse> response = ApiResponse.success(
+                    "Attachment uploaded successfully", updated);
+
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid attachment upload for mini job card: {}", id, e);
+            ApiResponse<MiniJobCardResponse> response = ApiResponse.error(e.getMessage(), null);
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            log.error("Error uploading attachment for mini job card: {}", id, e);
+            ApiResponse<MiniJobCardResponse> response = ApiResponse.error(
+                    "Failed to upload attachment", null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    /**
+     * Download attachment from a mini job card
+     */
+    @GetMapping("/{id}/attachment/download")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    public ResponseEntity<Resource> downloadAttachment(@PathVariable UUID id) {
+        try {
+            log.info("Request to download attachment for mini job card: {}", id);
+
+            // Get mini job card to check if it has an attachment
+            MiniJobCardResponse miniJobCard = miniJobCardService.getMiniJobCardResponse(id);
+
+            if (!miniJobCard.isHasAttachment()) {
+                log.warn("No attachment found for mini job card: {}", id);
+                return ResponseEntity.notFound().build();
+            }
+
+            // Load file
+            Resource resource = miniJobCardService.getAttachment(id);
+
+            // Determine content type
+            String contentType = "application/octet-stream";
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + miniJobCard.getAttachmentOriginalName() + "\"")
+                    .body(resource);
+
+        } catch (IllegalArgumentException e) {
+            log.error("Attachment not found for mini job card: {}", id, e);
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Error downloading attachment for mini job card: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * Delete attachment from a mini job card (ADMIN only)
+     */
+    @DeleteMapping("/{id}/attachment")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<MiniJobCardResponse>> deleteAttachment(@PathVariable UUID id) {
+        try {
+            log.info("Admin request to delete attachment for mini job card: {}", id);
+
+            MiniJobCardResponse updated = miniJobCardService.deleteAttachment(id);
+            ApiResponse<MiniJobCardResponse> response = ApiResponse.success(
+                    "Attachment deleted successfully", updated);
+
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid delete attachment request for mini job card: {}", id, e);
+            ApiResponse<MiniJobCardResponse> response = ApiResponse.error(e.getMessage(), null);
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            log.error("Error deleting attachment for mini job card: {}", id, e);
+            ApiResponse<MiniJobCardResponse> response = ApiResponse.error(
+                    "Failed to delete attachment", null);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }

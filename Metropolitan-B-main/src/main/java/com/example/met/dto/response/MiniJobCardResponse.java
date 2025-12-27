@@ -40,4 +40,9 @@ public class MiniJobCardResponse {
     private String generatorEmail;
     private String generatorDescription;
 
+    // Weight and attachment fields
+    private Integer weightLimit;           // Weight limit (1-10)
+    private boolean hasAttachment;         // Whether ticket has an attachment
+    private String attachmentOriginalName; // Original filename of attachment
+
 }
