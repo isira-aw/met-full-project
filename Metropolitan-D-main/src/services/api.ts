@@ -495,6 +495,46 @@ class ApiService {
     );
     return response.data;
   }
+
+  // ============================================================================
+  // PDF DOWNLOAD ENDPOINTS (ADMIN ONLY)
+  // ============================================================================
+
+  /**
+   * Download Employee Time Tracking Report as PDF.
+   * ADMIN only - requires authentication.
+   *
+   * @param request Report parameters (employeeEmail, startDate, endDate)
+   * @returns Blob containing the PDF file
+   */
+  async downloadEmployeeTimeReportPdf(request: ReportRequest): Promise<Blob> {
+    const response = await apiClient.post(
+      '/reports/employee-time-report/pdf',
+      request,
+      {
+        responseType: 'blob', // CRITICAL: Tell Axios to expect binary data
+      }
+    );
+    return response.data;
+  }
+
+  /**
+   * Download Employee Overtime Report as PDF.
+   * ADMIN only - requires authentication.
+   *
+   * @param request Report parameters (employeeEmail, startDate, endDate)
+   * @returns Blob containing the PDF file
+   */
+  async downloadOvertimeReportPdf(request: OTReportRequest): Promise<Blob> {
+    const response = await apiClient.post(
+      '/reports/employee-ot-report/pdf',
+      request,
+      {
+        responseType: 'blob', // CRITICAL: Tell Axios to expect binary data
+      }
+    );
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();

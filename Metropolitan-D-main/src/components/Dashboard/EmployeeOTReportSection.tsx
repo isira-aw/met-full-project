@@ -8,6 +8,7 @@ import {
   MapPin,
   Route,
   ExternalLink,
+  Download,
 } from "lucide-react";
 import { apiService } from "../../services/api";
 import {
@@ -17,6 +18,8 @@ import {
   OTReportResponse,
 } from "../../types/api";
 import { LoadingSpinner } from "../UI/LoadingSpinner";
+import { downloadPdf } from "../../utils/downloadUtils";
+import { extractErrorMessage, logError } from "../../utils/errorHandler";
 
 interface EmployeeOTReportSectionProps {
   employees: EmployeeResponse[];
@@ -30,6 +33,7 @@ export const EmployeeOTReportSection: React.FC<EmployeeOTReportSectionProps> = (
   const [endDate, setEndDate] = useState<string>("");
   const [reportData, setReportData] = useState<OTReportResponse | null>(null);
   const [reportLoading, setReportLoading] = useState<boolean>(false);
+  const [pdfLoading, setPdfLoading] = useState<boolean>(false);
   const [reportError, setReportError] = useState<string>("");
 
   useEffect(() => {
@@ -91,6 +95,45 @@ export const EmployeeOTReportSection: React.FC<EmployeeOTReportSectionProps> = (
       setReportError("Failed to generate OT report. Check console for details.");
     } finally {
       setReportLoading(false);
+    }
+  };
+
+  const downloadPdfReport = async (): Promise<void> => {
+    if (!selectedEmployee || !startDate || !endDate) {
+      setReportError("Please select employee and date range");
+      return;
+    }
+
+    if (new Date(startDate) > new Date(endDate)) {
+      setReportError("Start date cannot be after end date");
+      return;
+    }
+
+    setPdfLoading(true);
+    setReportError("");
+
+    try {
+      const request: OTReportRequest = {
+        employeeEmail: selectedEmployee,
+        startDate,
+        endDate,
+      };
+
+      const pdfBlob = await apiService.downloadOvertimeReportPdf(request);
+
+      // Generate filename with employee name and date range
+      const employeeName = employees.find(emp => emp.email === selectedEmployee)?.name || 'employee';
+      const filename = `ot-report_${employeeName.replace(/\s+/g, '-')}_${startDate}_to_${endDate}`;
+
+      downloadPdf(pdfBlob, filename);
+
+      console.log("OT PDF downloaded successfully");
+    } catch (error: unknown) {
+      const errorInfo = extractErrorMessage(error, 'Failed to download OT PDF report');
+      logError(errorInfo, 'EmployeeOTReportSection.downloadPdf');
+      setReportError(errorInfo.message);
+    } finally {
+      setPdfLoading(false);
     }
   };
 
@@ -230,14 +273,24 @@ export const EmployeeOTReportSection: React.FC<EmployeeOTReportSectionProps> = (
           />
         </div>
 
-        <div className="flex items-end">
+        <div className="flex items-end gap-2 col-span-1 md:col-span-2 lg:col-span-1">
           <button
             onClick={generateOTReport}
             disabled={reportLoading}
-            className="w-full flex items-center justify-center px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50 text-sm"
+            className="flex-1 flex items-center justify-center px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50 text-sm"
           >
             {reportLoading ? <LoadingSpinner size="sm" /> : <Clock className="h-4 w-4 mr-2" />}
             {reportLoading ? "Loading..." : "Generate OT Report"}
+          </button>
+
+          <button
+            onClick={downloadPdfReport}
+            disabled={pdfLoading || !selectedEmployee || !startDate || !endDate}
+            className="flex-1 flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 text-sm"
+            title="Download OT report as PDF"
+          >
+            {pdfLoading ? <LoadingSpinner size="sm" /> : <Download className="h-4 w-4 mr-2" />}
+            {pdfLoading ? "Downloading..." : "PDF"}
           </button>
         </div>
       </div>
