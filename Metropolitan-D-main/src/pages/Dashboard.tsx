@@ -43,7 +43,8 @@ export const Dashboard: React.FC = () => {
 
   useEffect(() => {
     loadDashboardData();
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount - user is not needed as dependency
 
   const getSriLankanToday = useCallback(() => {
     return format(new Date(), "yyyy-MM-dd", {

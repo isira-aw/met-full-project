@@ -133,105 +133,57 @@ class ApiService {
     return response.data;
   }
 
-  // Generators
+  // ============================================================================
+  // GENERATOR ENDPOINTS
+  // ============================================================================
+
   async getAllGenerators(): Promise<ApiResponse<GeneratorResponse[]>> {
-    const response = await fetch(`${BASE_URL}/generators`, {
-      headers: this.getAuthHeaders(),
-    });
-    return this.handleResponse<GeneratorResponse[]>(response);
+    const response = await apiClient.get<ApiResponse<GeneratorResponse[]>>('/generators');
+    return response.data;
   }
 
   async getAllGeneratorsCount(): Promise<ApiResponse<number>> {
-    const response = await fetch(`${BASE_URL}/generators/count`, {
-      headers: this.getAuthHeaders(),
-    });
-    return this.handleResponse<number>(response);
+    const response = await apiClient.get<ApiResponse<number>>('/generators/count');
+    return response.data;
   }
 
   async getGenerator(id: string): Promise<ApiResponse<GeneratorResponse>> {
-    const response = await fetch(`${BASE_URL}/generators/${id}`, {
-      headers: this.getAuthHeaders(),
-    });
-    return this.handleResponse<GeneratorResponse>(response);
+    const response = await apiClient.get<ApiResponse<GeneratorResponse>>(`/generators/${id}`);
+    return response.data;
   }
 
-  async createGenerator(
-    data: CreateGeneratorRequest
-  ): Promise<ApiResponse<GeneratorResponse>> {
-    const response = await fetch(`${BASE_URL}/generators`, {
-      method: "POST",
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(data),
-    });
-    return this.handleResponse<GeneratorResponse>(response);
+  async createGenerator(data: CreateGeneratorRequest): Promise<ApiResponse<GeneratorResponse>> {
+    const response = await apiClient.post<ApiResponse<GeneratorResponse>>('/generators', data);
+    return response.data;
   }
 
-  async updateGenerator(
-    id: string,
-    data: CreateGeneratorRequest
-  ): Promise<ApiResponse<GeneratorResponse>> {
-    const response = await fetch(`${BASE_URL}/generators/${id}`, {
-      method: "PUT",
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(data),
-    });
-    return this.handleResponse<GeneratorResponse>(response);
+  async updateGenerator(id: string, data: CreateGeneratorRequest): Promise<ApiResponse<GeneratorResponse>> {
+    const response = await apiClient.put<ApiResponse<GeneratorResponse>>(`/generators/${id}`, data);
+    return response.data;
   }
 
   async deleteGenerator(id: string): Promise<ApiResponse<null>> {
-    const response = await fetch(`${BASE_URL}/generators/${id}`, {
-      method: "DELETE",
-      headers: this.getAuthHeaders(),
-    });
-    return this.handleResponse<null>(response);
+    const response = await apiClient.delete<ApiResponse<null>>(`/generators/${id}`);
+    return response.data;
   }
 
-  async searchGenerators(
-    name: string
-  ): Promise<ApiResponse<GeneratorResponse[]>> {
-    const response = await fetch(
-      `${BASE_URL}/generators/search?name=${encodeURIComponent(name)}`,
-      {
-        headers: this.getAuthHeaders(),
-      }
+  async searchGenerators(name: string): Promise<ApiResponse<GeneratorResponse[]>> {
+    const response = await apiClient.get<ApiResponse<GeneratorResponse[]>>(
+      `/generators/search?name=${encodeURIComponent(name)}`
     );
-    return this.handleResponse<GeneratorResponse[]>(response);
+    return response.data;
   }
 
-  async generateEmployeeOTReport(
-    request: OTReportRequest
-  ): Promise<OTReportResponse> {
-    try {
-      const response = await fetch(`${BASE_URL}/reports/employee-ot-report`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...this.getAuthHeaders(),
-        },
-        body: JSON.stringify(request),
-      });
+  // ============================================================================
+  // REPORTS & OT ENDPOINTS
+  // ============================================================================
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          `HTTP error! status: ${response.status}, message: ${
-            errorData.message || "Failed to generate OT report"
-          }`
-        );
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Error generating OT report:", error);
-      throw error;
-    }
+  async generateEmployeeOTReport(request: OTReportRequest): Promise<OTReportResponse> {
+    const response = await apiClient.post<OTReportResponse>('/reports/employee-ot-report', request);
+    return response.data;
   }
 
-  // End Session
-  async endWorkSession(
-    request: EndSessionRequest
-  ): Promise<EndSessionResponse> {
+  async endWorkSession(request: EndSessionRequest): Promise<EndSessionResponse> {
     try {
       const params = new URLSearchParams({
         employeeEmail: request.employeeEmail,
@@ -240,95 +192,64 @@ class ApiService {
         endLocation: request.endLocation,
       });
 
-      const response = await fetch(
-        `${BASE_URL}/ot-time/end-session?${params}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...this.getAuthHeaders(),
-          },
-        }
+      const response = await apiClient.post<string>(
+        `/ot-time/end-session?${params}`,
+        null,
+        { responseType: 'text' as 'json' }
       );
 
-      if (response.ok) {
-        const message = await response.text();
-        return {
-          success: true,
-          message: message,
-        };
-      } else {
-        const errorMessage = await response.text();
-        return {
-          success: false,
-          message: errorMessage || "Failed to end session",
-        };
-      }
-    } catch (error) {
+      return {
+        success: true,
+        message: response.data,
+      };
+    } catch (error: any) {
       console.error("Error ending work session:", error);
       return {
         success: false,
-        message: "Network error occurred. Please try again.",
+        message: error.response?.data || "Network error occurred. Please try again.",
       };
     }
   }
 
-  // Job Cards
+  // ============================================================================
+  // JOB CARD ENDPOINTS
+  // ============================================================================
+
   async getAllJobCards(): Promise<ApiResponse<JobCardResponse[]>> {
-    const response = await fetch(`${BASE_URL}/jobcards`, {
-      headers: this.getAuthHeaders(),
-    });
-    return this.handleResponse<JobCardResponse[]>(response);
+    const response = await apiClient.get<ApiResponse<JobCardResponse[]>>('/jobcards');
+    return response.data;
   }
 
   async getJobCard(id: string): Promise<ApiResponse<JobCardResponse>> {
-    const response = await fetch(`${BASE_URL}/jobcards/${id}`, {
-      headers: this.getAuthHeaders(),
-    });
-    return this.handleResponse<JobCardResponse>(response);
+    const response = await apiClient.get<ApiResponse<JobCardResponse>>(`/jobcards/${id}`);
+    return response.data;
   }
 
-  async createServiceJob(
-    data: CreateJobCardRequest
-  ): Promise<ApiResponse<JobCardResponse>> {
-    const response = await fetch(`${BASE_URL}/jobcards/service`, {
-      method: "POST",
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(data),
-    });
-    return this.handleResponse<JobCardResponse>(response);
+  async createServiceJob(data: CreateJobCardRequest): Promise<ApiResponse<JobCardResponse>> {
+    const response = await apiClient.post<ApiResponse<JobCardResponse>>('/jobcards/service', data);
+    return response.data;
   }
 
-  async getJobCardsByDate(
-    date: string
-  ): Promise<ApiResponse<JobCardResponse[]>> {
-    try {
-      const response = await fetch(
-        `${BASE_URL}/jobcards/by-date?date=${date}`,
-        {
-          method: "GET",
-          headers: this.getAuthHeaders(),
-        }
-      );
-
-      return this.handleResponse<JobCardResponse[]>(response);
-    } catch (error) {
-      console.error("Error fetching job cards by date:", error);
-      throw error;
-    }
+  async getJobCardsByDate(date: string): Promise<ApiResponse<JobCardResponse[]>> {
+    const response = await apiClient.get<ApiResponse<JobCardResponse[]>>(
+      `/jobcards/by-date?date=${date}`
+    );
+    return response.data;
   }
+
   async deleteJobCard(jobCardId: string) {
-    const response = await fetch(`${BASE_URL}/jobcards/${jobCardId}`, {
-      method: "DELETE",
-      headers: this.getAuthHeaders(),
-    });
-
-    return {
-      status: response.ok,
-      message: response.ok
-        ? "Job card deleted successfully"
-        : "Failed to delete job card",
-    };
+    try {
+      await apiClient.delete(`/jobcards/${jobCardId}`);
+      return {
+        status: true,
+        message: "Job card deleted successfully",
+      };
+    } catch (error) {
+      return {
+        status: false,
+        message: "Failed to delete job card",
+      };
+    }
   }
 
   async updateJobCard(
@@ -341,212 +262,138 @@ class ApiService {
       employeeEmails: string[];
     }
   ): Promise<ApiResponse<JobCardResponse>> {
-    try {
-      const response = await fetch(`${BASE_URL}/jobcards/${jobCardId}`, {
-        method: "PUT",
-        headers: {
-          ...this.getAuthHeaders(),
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(updateData),
-      });
-
-      return this.handleResponse<JobCardResponse>(response);
-    } catch (error) {
-      console.error("Error updating job card:", error);
-      throw error;
-    }
-  }
-
-  async createRepairJob(
-    data: CreateJobCardRequest
-  ): Promise<ApiResponse<JobCardResponse>> {
-    const response = await fetch(`${BASE_URL}/jobcards/repair`, {
-      method: "POST",
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(data),
-    });
-    return this.handleResponse<JobCardResponse>(response);
-  }
-
-  async getJobCardsByType(
-    type: "SERVICE" | "REPAIR"
-  ): Promise<ApiResponse<JobCardResponse[]>> {
-    const response = await fetch(`${BASE_URL}/jobcards/type/${type}`, {
-      headers: this.getAuthHeaders(),
-    });
-    return this.handleResponse<JobCardResponse[]>(response);
-  }
-
-  async getJobCardsByEmployee(
-    email: string
-  ): Promise<ApiResponse<JobCardResponse[]>> {
-    const response = await fetch(
-      `${BASE_URL}/jobcards/employee/${encodeURIComponent(email)}`,
-      {
-        headers: this.getAuthHeaders(),
-      }
+    const response = await apiClient.put<ApiResponse<JobCardResponse>>(
+      `/jobcards/${jobCardId}`,
+      updateData
     );
-    return this.handleResponse<JobCardResponse[]>(response);
+    return response.data;
   }
 
-  async getJobCardsByGenerator(
-    generatorId: string
-  ): Promise<ApiResponse<JobCardResponse[]>> {
-    const response = await fetch(
-      `${BASE_URL}/jobcards/generator/${generatorId}`,
-      {
-        headers: this.getAuthHeaders(),
-      }
-    );
-    return this.handleResponse<JobCardResponse[]>(response);
+  async createRepairJob(data: CreateJobCardRequest): Promise<ApiResponse<JobCardResponse>> {
+    const response = await apiClient.post<ApiResponse<JobCardResponse>>('/jobcards/repair', data);
+    return response.data;
   }
 
-  // Mini Job Cards
-  async getMiniJobCardsByJobCard(
-    jobCardId: string
-  ): Promise<ApiResponse<MiniJobCardResponse[]>> {
-    const response = await fetch(
-      `${BASE_URL}/minijobcards/jobcard/${jobCardId}`,
-      {
-        headers: this.getAuthHeaders(),
-      }
-    );
-    return this.handleResponse<MiniJobCardResponse[]>(response);
+  async getJobCardsByType(type: "SERVICE" | "REPAIR"): Promise<ApiResponse<JobCardResponse[]>> {
+    const response = await apiClient.get<ApiResponse<JobCardResponse[]>>(`/jobcards/type/${type}`);
+    return response.data;
   }
+
+  async getJobCardsByEmployee(email: string): Promise<ApiResponse<JobCardResponse[]>> {
+    const response = await apiClient.get<ApiResponse<JobCardResponse[]>>(
+      `/jobcards/employee/${encodeURIComponent(email)}`
+    );
+    return response.data;
+  }
+
+  async getJobCardsByGenerator(generatorId: string): Promise<ApiResponse<JobCardResponse[]>> {
+    const response = await apiClient.get<ApiResponse<JobCardResponse[]>>(
+      `/jobcards/generator/${generatorId}`
+    );
+    return response.data;
+  }
+
+  // ============================================================================
+  // MINI JOB CARD ENDPOINTS
+  // ============================================================================
+
+  async getMiniJobCardsByJobCard(jobCardId: string): Promise<ApiResponse<MiniJobCardResponse[]>> {
+    const response = await apiClient.get<ApiResponse<MiniJobCardResponse[]>>(
+      `/minijobcards/jobcard/${jobCardId}`
+    );
+    return response.data;
+  }
+
   async getAllMiniJobCards(): Promise<ApiResponse<MiniJobCardResponse[]>> {
-    const response = await fetch(`${BASE_URL}/minijobcards`, {
-      headers: this.getAuthHeaders(),
-    });
-    return this.handleResponse<MiniJobCardResponse[]>(response);
+    const response = await apiClient.get<ApiResponse<MiniJobCardResponse[]>>('/minijobcards');
+    return response.data;
   }
 
   async getMiniJobCard(id: string): Promise<ApiResponse<MiniJobCardResponse>> {
-    const response = await fetch(`${BASE_URL}/minijobcards/${id}`, {
-      headers: this.getAuthHeaders(),
-    });
-    return this.handleResponse<MiniJobCardResponse>(response);
+    const response = await apiClient.get<ApiResponse<MiniJobCardResponse>>(`/minijobcards/${id}`);
+    return response.data;
   }
-
-  // async getMiniJobCardsByEmployee(email: string): Promise<ApiResponse<MiniJobCardResponse[]>> {
-  //   const response = await fetch(`${BASE_URL}/minijobcards/employee/${encodeURIComponent(email)}`, {
-  //     headers: this.getAuthHeaders()
-  //   });
-  //   return this.handleResponse<MiniJobCardResponse[]>(response);
-  // }
-
-  // async getMiniJobCardsByJobCard(jobCardId: string): Promise<ApiResponse<MiniJobCardResponse[]>> {
-  //   const response = await fetch(`${BASE_URL}/minijobcards/jobcard/${jobCardId}`, {
-  //     headers: this.getAuthHeaders()
-  //   });
-  //   return this.handleResponse<MiniJobCardResponse[]>(response);
-  // }
 
   async canEditStatus(): Promise<ApiResponse<boolean>> {
-    try {
-      const response = await fetch(`${BASE_URL}/minijobcards/can-edit-status`, {
-        method: "GET",
-        headers: this.getAuthHeaders(), // This includes the JWT token
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error("Error checking edit status eligibility:", error);
-      throw error;
-    }
+    const response = await apiClient.get<ApiResponse<boolean>>('/minijobcards/can-edit-status');
+    return response.data;
   }
-  async getMiniJobCardsByStatus(
-    status: string
-  ): Promise<ApiResponse<MiniJobCardResponse[]>> {
-    const response = await fetch(`${BASE_URL}/minijobcards/status/${status}`, {
-      headers: this.getAuthHeaders(),
-    });
-    return this.handleResponse<MiniJobCardResponse[]>(response);
+
+  async getMiniJobCardsByStatus(status: string): Promise<ApiResponse<MiniJobCardResponse[]>> {
+    const response = await apiClient.get<ApiResponse<MiniJobCardResponse[]>>(
+      `/minijobcards/status/${status}`
+    );
+    return response.data;
   }
 
   async updateMiniJobCard(
     id: string,
     data: UpdateMiniJobCardRequest
   ): Promise<ApiResponse<MiniJobCardResponse>> {
-    const response = await fetch(`${BASE_URL}/minijobcards/${id}`, {
-      method: "PUT",
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(data),
-    });
-    return this.handleResponse<MiniJobCardResponse>(response);
+    const response = await apiClient.put<ApiResponse<MiniJobCardResponse>>(
+      `/minijobcards/${id}`,
+      data
+    );
+    return response.data;
   }
 
-  async createMiniJobCard(
-    data: CreateMiniJobCardRequest
-  ): Promise<ApiResponse<MiniJobCardResponse>> {
-    const response = await fetch(`${BASE_URL}/minijobcards`, {
-      method: "POST",
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(data),
-    });
-    return this.handleResponse<MiniJobCardResponse>(response);
+  async createMiniJobCard(data: CreateMiniJobCardRequest): Promise<ApiResponse<MiniJobCardResponse>> {
+    const response = await apiClient.post<ApiResponse<MiniJobCardResponse>>('/minijobcards', data);
+    return response.data;
   }
 
-  // Activity Logs
+  async getMiniJobCardsByEmployeeAndDate(
+    email: string,
+    date: string
+  ): Promise<ApiResponse<MiniJobCardResponse[]>> {
+    const response = await apiClient.get<ApiResponse<MiniJobCardResponse[]>>(
+      `/minijobcards/employee/${encodeURIComponent(email)}/date/${date}`
+    );
+    return response.data;
+  }
+
+  // ============================================================================
+  // ACTIVITY LOG ENDPOINTS
+  // ============================================================================
+
   async getAllLogs(): Promise<ApiResponse<LogResponse[]>> {
-    const response = await fetch(`${BASE_URL}/logs`, {
-      headers: this.getAuthHeaders(),
-    });
-    return this.handleResponse<LogResponse[]>(response);
+    const response = await apiClient.get<ApiResponse<LogResponse[]>>('/logs');
+    return response.data;
   }
 
   async getLog(id: string): Promise<ApiResponse<LogResponse>> {
-    const response = await fetch(`${BASE_URL}/logs/${id}`, {
-      headers: this.getAuthHeaders(),
-    });
-    return this.handleResponse<LogResponse>(response);
+    const response = await apiClient.get<ApiResponse<LogResponse>>(`/logs/${id}`);
+    return response.data;
   }
 
   async getLogsByEmployee(email: string): Promise<ApiResponse<LogResponse[]>> {
-    const response = await fetch(
-      `${BASE_URL}/logs/employee/${encodeURIComponent(email)}`,
-      {
-        headers: this.getAuthHeaders(),
-      }
+    const response = await apiClient.get<ApiResponse<LogResponse[]>>(
+      `/logs/employee/${encodeURIComponent(email)}`
     );
-    return this.handleResponse<LogResponse[]>(response);
+    return response.data;
   }
 
   async getLogsByDate(date: string): Promise<ApiResponse<LogResponse[]>> {
-    const response = await fetch(`${BASE_URL}/logs/date/${date}`, {
-      headers: this.getAuthHeaders(),
-    });
-    return this.handleResponse<LogResponse[]>(response);
+    const response = await apiClient.get<ApiResponse<LogResponse[]>>(`/logs/date/${date}`);
+    return response.data;
   }
 
-  async getLogsByEmployeeAndDate(
-    email: string,
-    date: string
-  ): Promise<ApiResponse<LogResponse[]>> {
-    const response = await fetch(
-      `${BASE_URL}/logs/employee/${encodeURIComponent(email)}/date/${date}`,
-      {
-        headers: this.getAuthHeaders(),
-      }
+  async getLogsByEmployeeAndDate(email: string, date: string): Promise<ApiResponse<LogResponse[]>> {
+    const response = await apiClient.get<ApiResponse<LogResponse[]>>(
+      `/logs/employee/${encodeURIComponent(email)}/date/${date}`
     );
-    return this.handleResponse<LogResponse[]>(response);
+    return response.data;
   }
 
   async getRecentLogs(hours: number = 24): Promise<ApiResponse<LogResponse[]>> {
-    const response = await fetch(`${BASE_URL}/logs/recent?hours=${hours}`, {
-      headers: this.getAuthHeaders(),
-    });
-    return this.handleResponse<LogResponse[]>(response);
+    const response = await apiClient.get<ApiResponse<LogResponse[]>>(`/logs/recent?hours=${hours}`);
+    return response.data;
   }
 
   // Health Check
   async healthCheck(): Promise<ApiResponse<HealthResponse>> {
     const response = await fetch(`${BASE_URL}/health`);
-    return this.handleResponse<HealthResponse>(response);
+    return response.data;
   }
 
   // ============================================================================
@@ -556,12 +403,12 @@ class ApiService {
   async generateEmployeeTimeReport(
     request: ReportRequest
   ): Promise<ApiResponse<EmployeeTimeReportResponse>> {
-    const response = await fetch(`${BASE_URL}/reports/employee-time-report`, {
+    const response = await apiClient.get(`/reports/employee-time-report`);
       method: "POST",
-      headers: this.getAuthHeaders(),
+      headers: ,
       body: JSON.stringify(request),
     });
-    return this.handleResponse<EmployeeTimeReportResponse>(response);
+    return response.data;
   }
 
   // Keep the old method as deprecated (for backward compatibility)
@@ -572,33 +419,33 @@ class ApiService {
   }
 
   async getEmployeesForReports(): Promise<ApiResponse<EmployeeResponse[]>> {
-    const response = await fetch(`${BASE_URL}/reports/employees`, {
-      headers: this.getAuthHeaders(),
+    const response = await apiClient.get(`/reports/employees`);
+      headers: ,
     });
-    return this.handleResponse<EmployeeResponse[]>(response);
+    return response.data;
   }
 
   // Forgot Password Methods
   async forgotPassword(
     data: ForgotPasswordRequest
   ): Promise<ApiResponse<string>> {
-    const response = await fetch(`${BASE_URL}/auth/forgot-password`, {
+    const response = await apiClient.get(`/auth/forgot-password`);
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    return this.handleResponse<string>(response);
+    return response.data;
   }
 
   async resetPassword(
     data: ResetPasswordRequest
   ): Promise<ApiResponse<string>> {
-    const response = await fetch(`${BASE_URL}/auth/reset-password`, {
+    const response = await apiClient.get(`/auth/reset-password`);
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    return this.handleResponse<string>(response);
+    return response.data;
   }
 
   async verifyResetToken(token: string): Promise<ApiResponse<string>> {
@@ -609,7 +456,7 @@ class ApiService {
         headers: { "Content-Type": "application/json" },
       }
     );
-    return this.handleResponse<string>(response);
+    return response.data;
   }
 
   async getMiniJobCardsByEmployeeAndDate(
@@ -622,52 +469,52 @@ class ApiService {
       )}/date/${date}`,
       {
         method: "GET",
-        headers: this.getAuthHeaders(), // Use the same auth headers as other methods
+        headers: , // Use the same auth headers as other methods
       }
     );
-    return this.handleResponse<MiniJobCardResponse[]>(response);
+    return response.data;
   }
 
   // async getMiniJobCardsByEmployee(email: string): Promise<ApiResponse<MiniJobCardResponse[]>> {
-  //   const response = await fetch(`${BASE_URL}/minijobcards/employee/${encodeURIComponent(email)}`, {
-  //     headers: this.getAuthHeaders()
+  //   const response = await apiClient.get(`/minijobcards/employee/${encodeURIComponent(email)}`);
+  //     headers: 
   //   });
-  //   return this.handleResponse<MiniJobCardResponse[]>(response);
+  //   return response.data;
   // }
 
   // Add this method to your apiService.ts file
   async sendJobCardEmail(
     emailData: SendJobCardEmailRequest
   ): Promise<ApiResponse<EmailResponse>> {
-    const response = await fetch(`${BASE_URL}/emails/jobcard`, {
+    const response = await apiClient.get(`/emails/jobcard`);
       method: "POST",
       headers: {
-        ...this.getAuthHeaders(),
+        ...,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(emailData),
     });
-    return this.handleResponse<EmailResponse>(response);
+    return response.data;
   }
 
   // Get email history for a job card
   async getJobCardEmails(
     jobCardId: string
   ): Promise<ApiResponse<EmailResponse[]>> {
-    const response = await fetch(`${BASE_URL}/emails/jobcard/${jobCardId}`, {
-      headers: this.getAuthHeaders(),
+    const response = await apiClient.get(`/emails/jobcard/${jobCardId}`);
+      headers: ,
     });
-    return this.handleResponse<EmailResponse[]>(response);
+    return response.data;
   }
   // Create Visit Job
   async createVisitJob(
     data: CreateJobCardRequest
   ): Promise<ApiResponse<JobCardResponse>> {
     try {
-      const response = await fetch(`${BASE_URL}/jobcards/visit`, {
+      const response = await apiClient.get(`/jobcards/visit`);
         method: "POST",
         headers: {
-          ...this.getAuthHeaders(),
+          ...,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
@@ -692,10 +539,10 @@ class ApiService {
     const endpoint = jobType.toLowerCase(); // 'service', 'repair', or 'visit'
 
     try {
-      const response = await fetch(`${BASE_URL}/jobcards/${endpoint}`, {
+      const response = await apiClient.get(`/jobcards/${endpoint}`);
         method: "POST",
         headers: {
-          ...this.getAuthHeaders(),
+          ...,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
