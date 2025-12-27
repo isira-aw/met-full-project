@@ -25,3 +25,5 @@ export type { ModalProps } from './Modal';
 
 export { default as StatusBadge } from './StatusBadge';
 export type { StatusBadgeProps } from './StatusBadge';
+export { default as FileUpload } from './FileUpload';
+export type { FileUploadProps } from './FileUpload';
