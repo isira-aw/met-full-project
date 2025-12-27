@@ -62,7 +62,7 @@ public class PdfGeneratorService {
             // Summary Section
             document.add(createTimeSummarySection(
                     report.getTotalJobCards(),
-                    report.getTotalTimeSpent() != null ? report.getTotalTimeSpent().toString() : "N/A"
+                    report.getTotalTimeSpent()
             ));
 
             // Job Cards Table
@@ -176,13 +176,20 @@ public class PdfGeneratorService {
     /**
      * Creates time summary section.
      */
-    private PdfPTable createTimeSummarySection(int totalJobCards, String totalTime) throws DocumentException {
+    private PdfPTable createTimeSummarySection(int totalJobCards, com.example.met.dto.TimeSpentSummary totalTime) throws DocumentException {
         PdfPTable table = new PdfPTable(2);
         table.setWidthPercentage(100);
         table.setSpacingAfter(15);
 
         addInfoRow(table, "Total Job Cards:", String.valueOf(totalJobCards));
-        addInfoRow(table, "Total Time Spent:", totalTime);
+        if (totalTime != null) {
+            addInfoRow(table, "Total On Hold Time:", totalTime.getTotalOnHoldTime() != null ? totalTime.getTotalOnHoldTime() : "00:00");
+            addInfoRow(table, "Total Assigned Time:", totalTime.getTotalAssignedTime() != null ? totalTime.getTotalAssignedTime() : "00:00");
+            addInfoRow(table, "Total In Progress Time:", totalTime.getTotalInProgressTime() != null ? totalTime.getTotalInProgressTime() : "00:00");
+            addInfoRow(table, "Total Combined Time:", totalTime.getTotalCombinedTime() != null ? totalTime.getTotalCombinedTime() : "00:00");
+        } else {
+            addInfoRow(table, "Total Time Spent:", "N/A");
+        }
 
         return table;
     }
@@ -209,14 +216,11 @@ public class PdfGeneratorService {
         PdfPTable table = new PdfPTable(2);
         table.setWidthPercentage(100);
         table.setSpacingAfter(15);
+        table.setSpacingBefore(10);
 
-        Paragraph header = new Paragraph("Status Time Breakdown", BOLD_FONT);
-        header.setSpacingBefore(10);
-        header.setSpacingAfter(5);
-
-        addInfoRow(table, "On Hold Time:", onHold != null ? onHold : "0h 0m");
-        addInfoRow(table, "Assigned Time:", assigned != null ? assigned : "0h 0m");
-        addInfoRow(table, "In Progress Time:", inProgress != null ? inProgress : "0h 0m");
+        addInfoRow(table, "On Hold Time:", onHold != null ? onHold : "00:00");
+        addInfoRow(table, "Assigned Time:", assigned != null ? assigned : "00:00");
+        addInfoRow(table, "In Progress Time:", inProgress != null ? inProgress : "00:00");
 
         return table;
     }
@@ -241,25 +245,27 @@ public class PdfGeneratorService {
      * Creates job cards table.
      */
     private PdfPTable createJobCardsTable(java.util.List<JobCardTimeDetails> jobCards) throws DocumentException {
-        PdfPTable table = new PdfPTable(5);
+        PdfPTable table = new PdfPTable(6);
         table.setWidthPercentage(100);
-        table.setWidths(new float[]{2.5f, 2f, 1.5f, 1.5f, 2f});
+        table.setWidths(new float[]{2.5f, 2f, 1.5f, 1.5f, 1.5f, 1.5f});
         table.setSpacingAfter(15);
 
         // Headers
-        addTableHeader(table, "Generator");
+        addTableHeader(table, "Job Card");
         addTableHeader(table, "Location");
         addTableHeader(table, "Date");
-        addTableHeader(table, "Time Spent");
+        addTableHeader(table, "On Hold");
+        addTableHeader(table, "In Progress");
         addTableHeader(table, "Status");
 
         // Data rows
         for (JobCardTimeDetails jobCard : jobCards) {
-            addTableCell(table, jobCard.getGeneratorName());
-            addTableCell(table, jobCard.getGeneratorLocation());
-            addTableCell(table, jobCard.getJobCardDate() != null ? jobCard.getJobCardDate().toString() : "N/A");
-            addTableCell(table, jobCard.getTimeSpent() != null ? jobCard.getTimeSpent().toString() : "N/A");
-            addTableCell(table, jobCard.getStatus() != null ? jobCard.getStatus().toString() : "N/A");
+            addTableCell(table, jobCard.getJobCardTitle() != null ? jobCard.getJobCardTitle() : "N/A");
+            addTableCell(table, jobCard.getLocation() != null ? jobCard.getLocation() : "N/A");
+            addTableCell(table, jobCard.getDate() != null ? jobCard.getDate().toString() : "N/A");
+            addTableCell(table, jobCard.getTimeSpentOnHold() != null ? jobCard.getTimeSpentOnHold() : "00:00");
+            addTableCell(table, jobCard.getTimeSpentInProgress() != null ? jobCard.getTimeSpentInProgress() : "00:00");
+            addTableCell(table, jobCard.getCurrentStatus() != null ? jobCard.getCurrentStatus().toString() : "N/A");
         }
 
         return table;
