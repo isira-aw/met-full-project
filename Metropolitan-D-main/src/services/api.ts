@@ -392,7 +392,7 @@ class ApiService {
 
   // Health Check
   async healthCheck(): Promise<ApiResponse<HealthResponse>> {
-    const response = await fetch(`${BASE_URL}/health`);
+    const response = await apiClient.get<ApiResponse<HealthResponse>>('/health');
     return response.data;
   }
 
@@ -403,11 +403,10 @@ class ApiService {
   async generateEmployeeTimeReport(
     request: ReportRequest
   ): Promise<ApiResponse<EmployeeTimeReportResponse>> {
-    const response = await apiClient.get(`/reports/employee-time-report`);
-      method: "POST",
-      headers: ,
-      body: JSON.stringify(request),
-    });
+    const response = await apiClient.post<ApiResponse<EmployeeTimeReportResponse>>(
+      '/reports/employee-time-report',
+      request
+    );
     return response.data;
   }
 
@@ -419,9 +418,7 @@ class ApiService {
   }
 
   async getEmployeesForReports(): Promise<ApiResponse<EmployeeResponse[]>> {
-    const response = await apiClient.get(`/reports/employees`);
-      headers: ,
-    });
+    const response = await apiClient.get<ApiResponse<EmployeeResponse[]>>('/reports/employees');
     return response.data;
   }
 
@@ -429,71 +426,40 @@ class ApiService {
   async forgotPassword(
     data: ForgotPasswordRequest
   ): Promise<ApiResponse<string>> {
-    const response = await apiClient.get(`/auth/forgot-password`);
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
+    const response = await apiClient.post<ApiResponse<string>>(
+      '/auth/forgot-password',
+      data
+    );
     return response.data;
   }
 
   async resetPassword(
     data: ResetPasswordRequest
   ): Promise<ApiResponse<string>> {
-    const response = await apiClient.get(`/auth/reset-password`);
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
+    const response = await apiClient.post<ApiResponse<string>>(
+      '/auth/reset-password',
+      data
+    );
     return response.data;
   }
 
   async verifyResetToken(token: string): Promise<ApiResponse<string>> {
-    const response = await fetch(
-      `${BASE_URL}/auth/verify-reset-token/${encodeURIComponent(token)}`,
-      {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      }
+    const response = await apiClient.get<ApiResponse<string>>(
+      `/auth/verify-reset-token/${encodeURIComponent(token)}`
     );
     return response.data;
   }
 
-  async getMiniJobCardsByEmployeeAndDate(
-    email: string,
-    date: string
-  ): Promise<ApiResponse<MiniJobCardResponse[]>> {
-    const response = await fetch(
-      `${BASE_URL}/minijobcards/employee/${encodeURIComponent(
-        email
-      )}/date/${date}`,
-      {
-        method: "GET",
-        headers: , // Use the same auth headers as other methods
-      }
-    );
-    return response.data;
-  }
-
-  // async getMiniJobCardsByEmployee(email: string): Promise<ApiResponse<MiniJobCardResponse[]>> {
-  //   const response = await apiClient.get(`/minijobcards/employee/${encodeURIComponent(email)}`);
-  //     headers: 
-  //   });
-  //   return response.data;
-  // }
-
-  // Add this method to your apiService.ts file
+  // ============================================================================
+  // EMAIL ENDPOINTS
+  // ============================================================================
   async sendJobCardEmail(
     emailData: SendJobCardEmailRequest
   ): Promise<ApiResponse<EmailResponse>> {
-    const response = await apiClient.get(`/emails/jobcard`);
-      method: "POST",
-      headers: {
-        ...,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(emailData),
-    });
+    const response = await apiClient.post<ApiResponse<EmailResponse>>(
+      '/emails/jobcard',
+      emailData
+    );
     return response.data;
   }
 
@@ -501,34 +467,20 @@ class ApiService {
   async getJobCardEmails(
     jobCardId: string
   ): Promise<ApiResponse<EmailResponse[]>> {
-    const response = await apiClient.get(`/emails/jobcard/${jobCardId}`);
-      headers: ,
-    });
+    const response = await apiClient.get<ApiResponse<EmailResponse[]>>(
+      `/emails/jobcard/${jobCardId}`
+    );
     return response.data;
   }
   // Create Visit Job
   async createVisitJob(
     data: CreateJobCardRequest
   ): Promise<ApiResponse<JobCardResponse>> {
-    try {
-      const response = await apiClient.get(`/jobcards/visit`);
-        method: "POST",
-        headers: {
-          ...,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error("Error creating visit job:", error);
-      throw error;
-    }
+    const response = await apiClient.post<ApiResponse<JobCardResponse>>(
+      '/jobcards/visit',
+      data
+    );
+    return response.data;
   }
 
   // If you have separate endpoints, you might also need to update the generic job creation method
@@ -537,26 +489,11 @@ class ApiService {
     data: CreateJobCardRequest
   ): Promise<ApiResponse<JobCardResponse>> {
     const endpoint = jobType.toLowerCase(); // 'service', 'repair', or 'visit'
-
-    try {
-      const response = await apiClient.get(`/jobcards/${endpoint}`);
-        method: "POST",
-        headers: {
-          ...,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error(`Error creating ${jobType} job:`, error);
-      throw error;
-    }
+    const response = await apiClient.post<ApiResponse<JobCardResponse>>(
+      `/jobcards/${endpoint}`,
+      data
+    );
+    return response.data;
   }
 }
 
