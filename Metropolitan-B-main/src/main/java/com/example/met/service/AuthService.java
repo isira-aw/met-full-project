@@ -47,10 +47,12 @@ public class AuthService {
 
     /**
      * Authenticates user and generates access + refresh tokens.
+     * Refresh tokens are ONLY issued to ADMIN users for persistent sessions.
+     * EMPLOYEE users must re-authenticate with password on each session.
      *
      * @param request login credentials
      * @param httpRequest HTTP request for refresh token metadata
-     * @return LoginResult containing both access token response and refresh token value
+     * @return LoginResult containing both access token response and refresh token value (null for employees)
      */
     @Transactional
     public LoginResult loginWithTokens(LoginRequest request, HttpServletRequest httpRequest) {
@@ -68,14 +70,22 @@ public class AuthService {
             // Get employee details
             Employee employee = employeeService.findByEmail(request.getEmail());
 
-            // Revoke any existing refresh tokens for this user (single device policy)
-            // Comment out the line below if you want to allow multiple concurrent sessions
-            // refreshTokenService.revokeAllUserTokens(employee);
+            // Only create refresh token for ADMIN users
+            String refreshTokenValue = null;
+            if (employee.getRole().name().equals("ADMIN")) {
+                // Revoke any existing refresh tokens for this user (single device policy)
+                // Comment out the line below if you want to allow multiple concurrent sessions
+                // refreshTokenService.revokeAllUserTokens(employee);
 
-            // Create new refresh token
-            RefreshToken refreshToken = refreshTokenService.createRefreshToken(employee, httpRequest);
+                // Create new refresh token for admin
+                RefreshToken refreshToken = refreshTokenService.createRefreshToken(employee, httpRequest);
+                refreshTokenValue = refreshToken.getToken();
+                log.info("Refresh token created for ADMIN user: {}", request.getEmail());
+            } else {
+                log.info("Refresh token NOT created for EMPLOYEE user: {} (password required on each login)", request.getEmail());
+            }
 
-            log.info("Login successful for email: {}", request.getEmail());
+            log.info("Login successful for email: {} with role: {}", request.getEmail(), employee.getRole());
 
             // Build response
             AuthTokenResponse authResponse = AuthTokenResponse.builder()
@@ -89,7 +99,7 @@ public class AuthService {
                     .authenticated(true)
                     .build();
 
-            return new LoginResult(authResponse, refreshToken.getToken());
+            return new LoginResult(authResponse, refreshTokenValue);
         } catch (AuthenticationException e) {
             log.error("Login failed for email: {}", request.getEmail());
             throw new UnauthorizedException("Invalid email or password");

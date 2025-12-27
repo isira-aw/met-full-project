@@ -64,11 +64,13 @@ public class AuthController {
 
     /**
      * Login endpoint with JWT access + refresh token support.
-     * Returns access token in response body and refresh token in HttpOnly cookie.
+     * Returns access token in response body.
+     * Refresh token in HttpOnly cookie is ONLY set for ADMIN users.
+     * EMPLOYEE users must re-authenticate with password on each session.
      *
      * @param request Login credentials
      * @param httpRequest HTTP request for metadata
-     * @param httpResponse HTTP response to set cookie
+     * @param httpResponse HTTP response to set cookie (only for admins)
      * @return AuthTokenResponse with access token and user info
      */
     @PostMapping("/login")
@@ -85,8 +87,15 @@ public class AuthController {
             // Authenticate and get tokens
             AuthService.LoginResult loginResult = authService.loginWithTokens(request, httpRequest);
 
-            // Set refresh token in HttpOnly cookie
-            setRefreshTokenCookie(httpResponse, loginResult.refreshTokenValue);
+            // Set refresh token in HttpOnly cookie ONLY for ADMIN users
+            if (loginResult.refreshTokenValue != null) {
+                setRefreshTokenCookie(httpResponse, loginResult.refreshTokenValue);
+                log.debug("Refresh token cookie set for ADMIN user: {}", request.getEmail());
+            } else {
+                // Clear any existing refresh token cookie for employee users
+                clearRefreshTokenCookie(httpResponse);
+                log.debug("No refresh token cookie for EMPLOYEE user: {}", request.getEmail());
+            }
 
             ApiResponse<AuthTokenResponse> response = ApiResponse.success(
                     "Login successful", loginResult.authResponse);

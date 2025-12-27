@@ -66,7 +66,8 @@ apiClient.interceptors.request.use(
 
 /**
  * Response Interceptor:
- * - Handles automatic token refresh on 401 errors
+ * - Handles automatic token refresh on 401 errors (ADMIN only)
+ * - EMPLOYEE users are redirected to login immediately on 401
  * - Retries failed requests after token refresh
  * - Preserves error response data for proper error handling
  */
@@ -98,6 +99,29 @@ apiClient.interceptors.response.use(
         return Promise.reject(error);
       }
 
+      // Check user role - only ADMIN users can refresh tokens
+      const userData = localStorage.getItem('userData');
+      let userRole: string | null = null;
+
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          userRole = user.role;
+        } catch (e) {
+          console.error('Failed to parse userData:', e);
+        }
+      }
+
+      // EMPLOYEE users must re-authenticate - no token refresh
+      if (userRole === 'EMPLOYEE') {
+        console.log('🔒 EMPLOYEE user 401 - redirecting to login (no refresh token)');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('userData');
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
+
+      // Only ADMIN users proceed with token refresh
       if (isRefreshing) {
         // If already refreshing, queue this request
         return new Promise((resolve, reject) => {
@@ -120,7 +144,7 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // Attempt to refresh the token
+        // Attempt to refresh the token (ADMIN only)
         // The refresh token is automatically sent via HttpOnly cookie
         const response = await axios.post<ApiResponse<RefreshTokenResponse>>(
           `${BASE_URL}/auth/refresh`,
@@ -146,7 +170,7 @@ apiClient.interceptors.response.use(
           isRefreshing = false;
 
           if (import.meta.env.DEV) {
-            console.log('✅ Token refreshed successfully');
+            console.log('✅ Token refreshed successfully for ADMIN user');
           }
 
           // Retry the original request
