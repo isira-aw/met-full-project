@@ -3,6 +3,7 @@ import {
   Search,
   Calendar,
   User,
+  Download,
 } from "lucide-react";
 import { apiService } from "../../services/api";
 import {
@@ -11,6 +12,8 @@ import {
 } from "../../types/api";
 import { LoadingSpinner } from "../UI/LoadingSpinner";
 import { StatusBadge } from "../UI/StatusBadge";
+import { downloadPdf } from "../../utils/downloadUtils";
+import { extractErrorMessage, logError } from "../../utils/errorHandler";
 
 interface EmployeeReportSectionProps {
   employees: EmployeeResponse[];
@@ -60,6 +63,7 @@ export const EmployeeReportSection: React.FC<EmployeeReportSectionProps> = ({
   const [endDate, setEndDate] = useState<string>("");
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [reportLoading, setReportLoading] = useState<boolean>(false);
+  const [pdfLoading, setPdfLoading] = useState<boolean>(false);
   const [reportError, setReportError] = useState<string>("");
 
   useEffect(() => {
@@ -121,6 +125,45 @@ export const EmployeeReportSection: React.FC<EmployeeReportSectionProps> = ({
       setReportError("Failed to generate report. Check console for details.");
     } finally {
       setReportLoading(false);
+    }
+  };
+
+  const downloadPdfReport = async (): Promise<void> => {
+    if (!selectedEmployee || !startDate || !endDate) {
+      setReportError("Please select employee and date range");
+      return;
+    }
+
+    if (new Date(startDate) > new Date(endDate)) {
+      setReportError("Start date cannot be after end date");
+      return;
+    }
+
+    setPdfLoading(true);
+    setReportError("");
+
+    try {
+      const request: ReportRequest = {
+        employeeEmail: selectedEmployee,
+        startDate,
+        endDate,
+      };
+
+      const pdfBlob = await apiService.downloadEmployeeTimeReportPdf(request);
+
+      // Generate filename with employee name and date range
+      const employeeName = employees.find(emp => emp.email === selectedEmployee)?.name || 'employee';
+      const filename = `time-report_${employeeName.replace(/\s+/g, '-')}_${startDate}_to_${endDate}`;
+
+      downloadPdf(pdfBlob, filename);
+
+      console.log("PDF downloaded successfully");
+    } catch (error: unknown) {
+      const errorInfo = extractErrorMessage(error, 'Failed to download PDF report');
+      logError(errorInfo, 'EmployeeReportSection.downloadPdf');
+      setReportError(errorInfo.message);
+    } finally {
+      setPdfLoading(false);
     }
   };
 
@@ -192,14 +235,24 @@ export const EmployeeReportSection: React.FC<EmployeeReportSectionProps> = ({
           />
         </div>
 
-        <div className="flex items-end">
+        <div className="flex items-end gap-2 col-span-1 md:col-span-2 lg:col-span-1">
           <button
             onClick={generateReport}
             disabled={reportLoading}
-            className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
+            className="flex-1 flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
           >
             {reportLoading ? <LoadingSpinner size="sm" /> : <Search className="h-4 w-4 mr-2" />}
             {reportLoading ? "Loading..." : "Generate Report"}
+          </button>
+
+          <button
+            onClick={downloadPdfReport}
+            disabled={pdfLoading || !selectedEmployee || !startDate || !endDate}
+            className="flex-1 flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 text-sm"
+            title="Download report as PDF"
+          >
+            {pdfLoading ? <LoadingSpinner size="sm" /> : <Download className="h-4 w-4 mr-2" />}
+            {pdfLoading ? "Downloading..." : "PDF"}
           </button>
         </div>
       </div>

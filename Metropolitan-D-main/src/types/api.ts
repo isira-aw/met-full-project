@@ -22,12 +22,38 @@ export interface RegisterRequest {
   password: string;
 }
 
+// Legacy auth response - kept for backward compatibility
 export interface AuthResponse {
   token: string;
   email: string;
   name: string;
   role: 'ADMIN' | 'EMPLOYEE';
   contactNumber: string;
+}
+
+// New auth response with access token and refresh token support
+export interface AuthTokenResponse {
+  accessToken: string;
+  tokenType: string;
+  expiresIn: number;
+  email: string;
+  name: string;
+  role: 'ADMIN' | 'EMPLOYEE';
+  contactNumber: string;
+  authenticated: boolean;
+}
+
+// Refresh token request
+export interface RefreshTokenRequest {
+  refreshToken?: string; // Optional, as it can come from HttpOnly cookie
+}
+
+// Refresh token response
+export interface RefreshTokenResponse {
+  accessToken: string;
+  tokenType: string;
+  expiresIn: number;
+  email: string;
 }
 
 // Forgot Password Types
