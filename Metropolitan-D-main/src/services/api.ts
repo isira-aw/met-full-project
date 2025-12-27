@@ -1,8 +1,11 @@
+import apiClient from './apiClient';
 import {
   ApiResponse,
   LoginRequest,
   RegisterRequest,
   AuthResponse,
+  AuthTokenResponse,
+  RefreshTokenResponse,
   EmployeeResponse,
   UpdateEmployeeRequest,
   GeneratorResponse,
@@ -26,93 +29,108 @@ import {
   EndSessionResponse,
 } from "../types/api";
 
-
-//const BASE_URL = "http://localhost:8080/api";
-const BASE_URL = 'https://metropolitan-b-production.up.railway.app/api';
+/**
+ * API Service Class
+ *
+ * Centralized service for all API calls using Axios.
+ * All methods automatically include:
+ * - Access token in Authorization header
+ * - Automatic token refresh on 401 errors
+ * - Error handling
+ */
 
 class ApiService {
-  private getAuthHeaders(): HeadersInit {
-    const token = localStorage.getItem("authToken");
-    return {
-      "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }),
-    };
+  // ============================================================================
+  // AUTHENTICATION ENDPOINTS
+  // ============================================================================
+
+  /**
+   * Login with email and password.
+   * Returns access token in response and refresh token in HttpOnly cookie.
+   */
+  async login(credentials: LoginRequest): Promise<ApiResponse<AuthTokenResponse>> {
+    const response = await apiClient.post<ApiResponse<AuthTokenResponse>>(
+      '/auth/login',
+      credentials
+    );
+    return response.data;
   }
 
-  private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
-    if (response.status === 401) {
-      localStorage.removeItem("authToken");
-      window.location.href = "/login";
-      throw new Error("Unauthorized");
-    }
-
-    const data = await response.json();
-    return data;
+  /**
+   * Legacy login endpoint (kept for backward compatibility).
+   * @deprecated Use login() instead
+   */
+  async loginLegacy(credentials: LoginRequest): Promise<ApiResponse<AuthResponse>> {
+    const response = await apiClient.post<ApiResponse<AuthResponse>>(
+      '/auth/login/legacy',
+      credentials
+    );
+    return response.data;
   }
 
-  // Authentication
-  async login(credentials: LoginRequest): Promise<ApiResponse<AuthResponse>> {
-    const response = await fetch(`${BASE_URL}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(credentials),
-    });
-    return this.handleResponse<AuthResponse>(response);
+  /**
+   * Refresh access token using refresh token from HttpOnly cookie.
+   * This is automatically called by axios interceptor on 401 errors.
+   */
+  async refreshToken(): Promise<ApiResponse<RefreshTokenResponse>> {
+    const response = await apiClient.post<ApiResponse<RefreshTokenResponse>>(
+      '/auth/refresh',
+      {} // Empty body, refresh token comes from HttpOnly cookie
+    );
+    return response.data;
   }
 
-  async register(
-    userData: RegisterRequest
-  ): Promise<ApiResponse<EmployeeResponse>> {
-    const response = await fetch(`${BASE_URL}/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(userData),
-    });
-    return this.handleResponse<EmployeeResponse>(response);
+  /**
+   * Logout - revokes refresh token on server.
+   */
+  async logout(): Promise<ApiResponse<string>> {
+    const response = await apiClient.post<ApiResponse<string>>('/auth/logout');
+    return response.data;
   }
 
-  // Employees
+  /**
+   * Register a new employee.
+   */
+  async register(userData: RegisterRequest): Promise<ApiResponse<EmployeeResponse>> {
+    const response = await apiClient.post<ApiResponse<EmployeeResponse>>(
+      '/auth/register',
+      userData
+    );
+    return response.data;
+  }
+
+  // ============================================================================
+  // EMPLOYEE ENDPOINTS
+  // ============================================================================
+
   async getAllEmployees(): Promise<ApiResponse<EmployeeResponse[]>> {
-    const response = await fetch(`${BASE_URL}/employees`, {
-      headers: this.getAuthHeaders(),
-    });
-    return this.handleResponse<EmployeeResponse[]>(response);
+    const response = await apiClient.get<ApiResponse<EmployeeResponse[]>>('/employees');
+    return response.data;
   }
 
   async getEmployee(email: string): Promise<ApiResponse<EmployeeResponse>> {
-    const response = await fetch(
-      `${BASE_URL}/employees/${encodeURIComponent(email)}`,
-      {
-        headers: this.getAuthHeaders(),
-      }
+    const response = await apiClient.get<ApiResponse<EmployeeResponse>>(
+      `/employees/${encodeURIComponent(email)}`
     );
-    return this.handleResponse<EmployeeResponse>(response);
+    return response.data;
   }
 
   async updateEmployee(
     email: string,
     data: UpdateEmployeeRequest
   ): Promise<ApiResponse<EmployeeResponse>> {
-    const response = await fetch(
-      `${BASE_URL}/employees/${encodeURIComponent(email)}`,
-      {
-        method: "PUT",
-        headers: this.getAuthHeaders(),
-        body: JSON.stringify(data),
-      }
+    const response = await apiClient.put<ApiResponse<EmployeeResponse>>(
+      `/employees/${encodeURIComponent(email)}`,
+      data
     );
-    return this.handleResponse<EmployeeResponse>(response);
+    return response.data;
   }
 
   async deleteEmployee(email: string): Promise<ApiResponse<null>> {
-    const response = await fetch(
-      `${BASE_URL}/employees/${encodeURIComponent(email)}`,
-      {
-        method: "DELETE",
-        headers: this.getAuthHeaders(),
-      }
+    const response = await apiClient.delete<ApiResponse<null>>(
+      `/employees/${encodeURIComponent(email)}`
     );
-    return this.handleResponse<null>(response);
+    return response.data;
   }
 
   // Generators

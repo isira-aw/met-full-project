@@ -59,10 +59,16 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*"));
+        // Allow specific origins for production security
+        configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:5173",
+                "http://localhost:3000",
+                "https://metropolitan-d-production.up.railway.app"
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(false); // Change this to false
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
+        // CRITICAL: Enable credentials to allow HttpOnly cookies
+        configuration.setAllowCredentials(true);
         configuration.setExposedHeaders(List.of("Authorization"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -79,9 +85,14 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth ->
                         auth
-                                // Public endpoints
-                                .requestMatchers("/auth/**", "/health/**", "/actuator/**").permitAll()
-                                // All other endpoints require authentication (simplified)
+                                // Public endpoints - No authentication required
+                                .requestMatchers("/auth/login", "/auth/register", "/auth/refresh",
+                                               "/auth/forgot-password", "/auth/reset-password",
+                                               "/auth/verify-reset-token/**", "/auth/check-email").permitAll()
+                                .requestMatchers("/health/**", "/actuator/**").permitAll()
+                                // Logout requires authentication
+                                .requestMatchers("/auth/logout").authenticated()
+                                // All other endpoints require authentication
                                 .anyRequest().authenticated()
                 );
 
