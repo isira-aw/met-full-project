@@ -23,7 +23,7 @@ import {
   EmployeeResponse,
   CreateJobCardRequest,
 } from "../../types/api";
-import { Modal } from "../UI/Modal";
+import Modal from "../ui/Modal";
 import { JobCardDetailView } from "./JobCardDetailView";
 import { EditJobCardModal } from "./EditJobCardModal";
 import { apiService } from "../../services/api";

@@ -19,8 +19,8 @@ import {
   TaskStatus,
   UpdateMiniJobCardRequest,
 } from "../../types/api";
-import { StatusBadge } from "../UI/StatusBadge";
-import { Modal } from "../UI/Modal";
+import StatusBadge from "../ui/StatusBadge";
+import Modal from "../ui/Modal";
 import FileUpload from "../ui/FileUpload";
 import { apiService } from "../../services/api";
 

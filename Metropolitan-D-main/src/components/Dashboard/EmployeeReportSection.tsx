@@ -10,8 +10,8 @@ import {
   EmployeeResponse,
   ReportRequest,
 } from "../../types/api";
-import { LoadingSpinner } from "../UI/LoadingSpinner";
-import { StatusBadge } from "../UI/StatusBadge";
+import LoadingSpinner from "../ui/LoadingSpinner";
+import StatusBadge from "../ui/StatusBadge";
 import { downloadPdf } from "../../utils/downloadUtils";
 import { extractErrorMessage, logError } from "../../utils/errorHandler";
 

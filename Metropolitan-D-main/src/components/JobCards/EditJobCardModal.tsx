@@ -18,7 +18,7 @@ import {
   GeneratorResponse,
   EmployeeResponse,
 } from "../../types/api";
-import { Modal } from "../UI/Modal";
+import Modal from "../ui/Modal";
 import { apiService } from "../../services/api";
 
 // Enhanced Searchable Generator Select Component

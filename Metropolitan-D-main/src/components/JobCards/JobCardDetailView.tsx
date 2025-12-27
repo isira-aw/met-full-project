@@ -16,8 +16,8 @@ import {
 } from "lucide-react";
 import { JobCardResponse, MiniJobCardResponse } from "../../types/api";
 import { apiService } from "../../services/api";
-import { Modal } from "../UI/Modal";
-import { LoadingSpinner } from "../UI/LoadingSpinner";
+import Modal from "../ui/Modal";
+import LoadingSpinner from "../ui/LoadingSpinner";
 import { EmailNotificationModal } from "./EmailNotificationModal";
 
 interface JobCardDetailViewProps {

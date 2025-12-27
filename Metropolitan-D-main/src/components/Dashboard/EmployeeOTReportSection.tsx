@@ -17,7 +17,7 @@ import {
   OTRecord,
   OTReportResponse,
 } from "../../types/api";
-import { LoadingSpinner } from "../UI/LoadingSpinner";
+import LoadingSpinner from "../ui/LoadingSpinner";
 import { downloadPdf } from "../../utils/downloadUtils";
 import { extractErrorMessage, logError } from "../../utils/errorHandler";
 

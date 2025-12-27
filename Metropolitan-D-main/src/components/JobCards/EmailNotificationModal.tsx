@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Send, AlertCircle, CheckCircle } from "lucide-react";
 import { JobCardResponse } from "../../types/api";
 import { apiService } from "../../services/api";
-import { Modal } from "../UI/Modal";
+import Modal from "../ui/Modal";
 
 interface EmailNotificationModalProps {
   isOpen: boolean;
