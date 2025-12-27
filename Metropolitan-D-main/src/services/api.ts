@@ -353,6 +353,66 @@ class ApiService {
   }
 
   // ============================================================================
+  // MINI JOB CARD - WEIGHT & ATTACHMENT MANAGEMENT
+  // ============================================================================
+
+  /**
+   * Update ticket weight (1-10).
+   * ADMIN only - requires admin role.
+   */
+  async updateTicketWeight(ticketId: string, weight: number): Promise<ApiResponse<MiniJobCardResponse>> {
+    const response = await apiClient.patch<ApiResponse<MiniJobCardResponse>>(
+      `/minijobcards/${ticketId}/weight`,
+      { weightLimit: weight }
+    );
+    return response.data;
+  }
+
+  /**
+   * Upload attachment to a ticket.
+   * ADMIN can upload to any ticket.
+   * EMPLOYEE can only upload to their own tickets.
+   */
+  async uploadTicketAttachment(ticketId: string, file: File): Promise<ApiResponse<MiniJobCardResponse>> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await apiClient.post<ApiResponse<MiniJobCardResponse>>(
+      `/minijobcards/${ticketId}/attachment`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  }
+
+  /**
+   * Download attachment from a ticket.
+   * Returns a Blob for file download.
+   */
+  async downloadTicketAttachment(ticketId: string): Promise<Blob> {
+    const response = await apiClient.get(
+      `/minijobcards/${ticketId}/attachment/download`,
+      { responseType: 'blob' }
+    );
+    return response.data;
+  }
+
+  /**
+   * Delete attachment from a ticket.
+   * ADMIN only - requires admin role.
+   */
+  async deleteTicketAttachment(ticketId: string): Promise<ApiResponse<MiniJobCardResponse>> {
+    const response = await apiClient.delete<ApiResponse<MiniJobCardResponse>>(
+      `/minijobcards/${ticketId}/attachment`
+    );
+    return response.data;
+  }
+
+  // ============================================================================
   // ACTIVITY LOG ENDPOINTS
   // ============================================================================
 

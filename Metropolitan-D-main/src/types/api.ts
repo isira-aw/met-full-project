@@ -154,6 +154,10 @@ export interface MiniJobCardResponse {
   time: string;
   createdAt: string;
   updatedAt: string;
+  // Weight and attachment fields
+  weightLimit: number;
+  hasAttachment: boolean;
+  attachmentOriginalName: string | null;
 }
 
 export interface UpdateMiniJobCardRequest {

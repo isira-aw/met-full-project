@@ -167,6 +167,9 @@ export const MyTasks: React.FC = () => {
   const [locationError, setLocationError] = useState<string>("");
   const [isUpdating, setIsUpdating] = useState(false);
 
+  // File upload state for task completion
+  const [completionFile, setCompletionFile] = useState<File | null>(null);
+
   // New state for location requirement check
   const [locationRequirementMet, setLocationRequirementMet] = useState(false);
   const [initialLocationCheck, setInitialLocationCheck] = useState(true);
@@ -595,12 +598,27 @@ export const MyTasks: React.FC = () => {
         updatedForm
       );
       if (response.status) {
+        // If status is COMPLETED and file is attached, upload it
+        if (updatedForm.status === 'COMPLETED' && completionFile) {
+          try {
+            await apiService.uploadTicketAttachment(
+              updatingTask.miniJobCardId,
+              completionFile
+            );
+            console.log('Completion file uploaded successfully');
+          } catch (error) {
+            console.error('Error uploading completion file:', error);
+            alert('Task completed but file upload failed. You can try uploading later.');
+          }
+        }
+
         await loadTasks();
         setShowUpdateModal(false);
         setUpdatingTask(null);
         setUpdateForm({});
         setCurrentLocation(null);
         setLocationAddress("");
+        setCompletionFile(null); // Clear the file after successful update
       }
     } catch (error) {
       console.error("Error updating task:", error);
@@ -698,6 +716,8 @@ export const MyTasks: React.FC = () => {
         canEditTask={canEditTask}
         hasBlockingStatus={hasBlockingStatus}
         activeTaskId={activeTaskId}
+        completionFile={completionFile}
+        setCompletionFile={setCompletionFile}
       />
 
       {/* No tasks message */}

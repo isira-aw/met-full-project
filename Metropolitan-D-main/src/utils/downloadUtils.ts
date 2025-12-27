@@ -71,6 +71,28 @@ export const getFilenameFromHeader = (
 };
 
 /**
+ * Downloads a ticket attachment.
+ * Shows error alert if download fails.
+ *
+ * @param ticketId The ticket ID
+ * @param filename The original filename to save as
+ * @param downloadFunction The API function to call for downloading
+ */
+export const downloadTicketAttachment = async (
+  ticketId: string,
+  filename: string,
+  downloadFunction: (ticketId: string) => Promise<Blob>
+): Promise<void> => {
+  try {
+    const blob = await downloadFunction(ticketId);
+    downloadBlob(blob, filename);
+  } catch (error) {
+    console.error('Failed to download attachment:', error);
+    alert('Failed to download attachment. Please try again.');
+  }
+};
+
+/**
  * Example usage:
  *
  * // Simple download
@@ -86,4 +108,12 @@ export const getFilenameFromHeader = (
  *   'default-report.pdf'
  * );
  * downloadBlob(blob, filename);
+ *
+ * // Ticket attachment download
+ * import { apiService } from '../services/api';
+ * downloadTicketAttachment(
+ *   ticketId,
+ *   'attachment.pdf',
+ *   apiService.downloadTicketAttachment
+ * );
  */

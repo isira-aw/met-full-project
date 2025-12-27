@@ -21,6 +21,7 @@ import {
 } from "../../types/api";
 import { StatusBadge } from "../UI/StatusBadge";
 import { Modal } from "../UI/Modal";
+import FileUpload from "../ui/FileUpload";
 import { apiService } from "../../services/api";
 
 // Enhanced interface
@@ -78,6 +79,8 @@ interface TasksDisplayProps {
   canEditTask: (task: EnhancedMiniJobCardResponse) => boolean;
   hasBlockingStatus: boolean;
   activeTaskId: string | null;
+  completionFile: File | null;
+  setCompletionFile: (file: File | null) => void;
 }
 
 export const TasksDisplay: React.FC<TasksDisplayProps> = ({
@@ -99,6 +102,8 @@ export const TasksDisplay: React.FC<TasksDisplayProps> = ({
   isUpdating,
   getAvailableStatusOptions,
   getOrdinalSuffix,
+  completionFile,
+  setCompletionFile,
 }) => {
   const {
     currentLocation,
@@ -483,6 +488,7 @@ export const TasksDisplay: React.FC<TasksDisplayProps> = ({
           setShowUpdateModal(false);
           setUpdatingTask(null);
           setUpdateForm({});
+          setCompletionFile(null);
         }}
         title={`Update Task - ${
           updatingTask?.generatorName || "Generator Task"
@@ -672,12 +678,26 @@ export const TasksDisplay: React.FC<TasksDisplayProps> = ({
             </select>
           </div>
 
+          {/* File Upload - Show only when status is COMPLETED */}
+          {updateForm.status === 'COMPLETED' && (
+            <div>
+              <FileUpload
+                label="Attach Completion Document (Optional)"
+                onFileSelect={setCompletionFile}
+                accept=".pdf,.jpg,.jpeg,.png"
+                maxSize={10}
+                helperText="Upload photos of completed work, reports, etc."
+              />
+            </div>
+          )}
+
           <div className="flex justify-end space-x-3 pt-4">
             <button
               onClick={() => {
                 setShowUpdateModal(false);
                 setUpdatingTask(null);
                 setUpdateForm({});
+                setCompletionFile(null);
               }}
               className="px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors"
             >
